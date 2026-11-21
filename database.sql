@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS alat (
     kode_alat VARCHAR(30) NOT NULL UNIQUE,
     nama VARCHAR(120) NOT NULL,
     deskripsi TEXT,
+    gambar VARCHAR(255),
     stok_total INT UNSIGNED NOT NULL DEFAULT 0,
     kondisi ENUM('baik', 'rusak', 'perawatan') NOT NULL DEFAULT 'baik',
     status ENUM('aktif', 'nonaktif') NOT NULL DEFAULT 'aktif',
@@ -169,3 +170,26 @@ GROUP BY
     a.stok_total,
     a.kondisi,
     a.status;
+
+INSERT INTO kategori (nama, deskripsi) VALUES
+    ('Komputer', 'Komputer dan perangkat komputasi'),
+    ('Jaringan', 'Perangkat jaringan dan konektivitas'),
+    ('Periferal', 'Perangkat pendukung komputer'),
+    ('Elektronik', 'Perangkat elektronik pendukung')
+ON DUPLICATE KEY UPDATE nama = VALUES(nama);
+
+INSERT INTO alat (kategori_id, kode_alat, nama, deskripsi, stok_total, kondisi, status)
+SELECT k.id, seed.kode_alat, seed.nama, seed.deskripsi, seed.stok_total, 'baik', 'aktif'
+FROM (
+    SELECT 'Komputer' AS kategori, 'IT-LTP-001' AS kode_alat, 'Laptop ASUS Vivobook' AS nama,
+           'Laptop untuk presentasi, desain, dan kebutuhan kerja.' AS deskripsi, 6 AS stok_total
+    UNION ALL SELECT 'Komputer', 'IT-PC-001', 'Komputer Desktop', 'Komputer untuk kebutuhan kerja dan laboratorium.', 4
+    UNION ALL SELECT 'Jaringan', 'IT-RT-001', 'Router Wi-Fi', 'Router untuk kebutuhan konektivitas jaringan.', 3
+    UNION ALL SELECT 'Periferal', 'IT-MON-001', 'Monitor LED', 'Monitor untuk komputer desktop.', 5
+    UNION ALL SELECT 'Periferal', 'IT-KBD-001', 'Keyboard USB', 'Keyboard USB untuk komputer desktop.', 8
+    UNION ALL SELECT 'Elektronik', 'IT-PRO-001', 'Proyektor Epson EB-E01', 'Proyektor untuk rapat dan presentasi.', 3
+) AS seed
+INNER JOIN kategori AS k ON k.nama = seed.kategori
+ON DUPLICATE KEY UPDATE
+    nama = VALUES(nama),
+    deskripsi = VALUES(deskripsi);
