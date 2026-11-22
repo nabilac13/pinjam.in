@@ -204,6 +204,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     $returnStatement->execute(['admin_id' => $admin['id'], 'loan_id' => $loanId]);
                 }
+                if ($nextStatus === 'dipinjam' && $currentStatus === 'menunggu_verifikasi_pengembalian') {
+                    $returnStatement = $pdo->prepare(
+                        "UPDATE pengembalian SET status = 'ditolak', diverifikasi_oleh = :admin_id,
+                         tanggal_verifikasi = NOW() WHERE peminjaman_id = :loan_id"
+                    );
+                    $returnStatement->execute(['admin_id' => $admin['id'], 'loan_id' => $loanId]);
+                }
                 $pdo->commit();
             } else {
                 $userId = filter_var($_POST['user_id'] ?? '', FILTER_VALIDATE_INT);

@@ -52,7 +52,7 @@ try {
 
     if ($user) {
         $historyStatement = $pdo->prepare(
-            "SELECT p.kode_peminjaman, p.tanggal_rencana_pinjam, p.tanggal_rencana_kembali, p.status,
+            "SELECT p.id, p.kode_peminjaman, p.tanggal_rencana_pinjam, p.tanggal_rencana_kembali, p.status,
                     COALESCE(GROUP_CONCAT(CONCAT(a.nama, ' (', dp.jumlah, ')') ORDER BY a.nama SEPARATOR ', '), '') AS daftar_alat
              FROM peminjaman AS p
              LEFT JOIN detail_peminjaman AS dp ON dp.peminjaman_id = p.id

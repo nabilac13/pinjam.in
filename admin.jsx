@@ -198,7 +198,11 @@ function AdminApp() {
                                                             disetujui: ["dipinjam"],
                                                             dipinjam: ["selesai"],
                                                             menunggu_verifikasi_pengembalian: ["dipinjam", "selesai"],
-                                                        }[loan.status] || []).map(next => <option key={next} value={next}>{loanStatuses[next].label}</option>)}
+                                                        }[loan.status] || []).map(next => <option key={next} value={next}>
+                                                            {loan.status === "menunggu_verifikasi_pengembalian"
+                                                                ? (next === "selesai" ? "Konfirmasi pengembalian" : "Pengembalian ditolak")
+                                                                : loanStatuses[next].label}
+                                                        </option>)}
                                                     </select>
                                                     <button type="submit" className="rounded-lg bg-blue-600 px-2.5 py-2 text-xs font-bold text-white hover:bg-blue-700">Simpan</button>
                                                 </form>}

@@ -219,7 +219,59 @@ try {
             $detailStatement->execute(['peminjaman_id' => $loanId, 'alat_id' => $id, 'jumlah' => $quantity]);
         }
         $pdo->commit();
-        respond(201, ['message' => 'Pengajuan peminjaman berhasil dikirim.', 'kode' => $code]);
+        respond(201, ['message' => 'Pengajuan peminjaman berhasil dikirim.', 'kode' => $code, 'loanId' => $loanId]);
+    }
+
+    if ($action === 'return_request') {
+        $user = $_SESSION['public_user'] ?? null;
+        if (!$user) {
+            respond(401, ['error' => 'Masuk ke akun peminjam terlebih dahulu.']);
+        }
+
+        $loanId = filter_var($input['loanId'] ?? null, FILTER_VALIDATE_INT);
+        $note = trim((string) ($input['catatan'] ?? ''));
+        if (!$loanId || mb_strlen($note) > 2000) {
+            respond(422, ['error' => 'Permintaan pengembalian tidak valid.']);
+        }
+
+        $pdo->beginTransaction();
+        $loanStatement = $pdo->prepare(
+            "SELECT status FROM peminjaman
+             WHERE id = :id AND peminjam_id = :peminjam_id
+             FOR UPDATE"
+        );
+        $loanStatement->execute(['id' => $loanId, 'peminjam_id' => $user['id']]);
+        $currentStatus = $loanStatement->fetchColumn();
+        if ($currentStatus !== 'dipinjam') {
+            $pdo->rollBack();
+            respond(409, ['error' => 'Pengembalian hanya dapat diajukan untuk peminjaman yang sedang dipinjam.']);
+        }
+
+        $existingStatement = $pdo->prepare(
+            "SELECT id FROM pengembalian WHERE peminjaman_id = :loan_id LIMIT 1"
+        );
+        $existingStatement->execute(['loan_id' => $loanId]);
+        if ($existingStatement->fetch()) {
+            $pdo->rollBack();
+            respond(409, ['error' => 'Permintaan pengembalian sudah diajukan.']);
+        }
+
+        $insertReturn = $pdo->prepare(
+            "INSERT INTO pengembalian
+                (peminjaman_id, status, catatan_peminjam)
+             VALUES (:loan_id, 'menunggu_verifikasi', :catatan)"
+        );
+        $insertReturn->execute([
+            'loan_id' => $loanId,
+            'catatan' => $note !== '' ? $note : null,
+        ]);
+        $updateLoan = $pdo->prepare(
+            "UPDATE peminjaman SET status = 'menunggu_verifikasi_pengembalian'
+             WHERE id = :id"
+        );
+        $updateLoan->execute(['id' => $loanId]);
+        $pdo->commit();
+        respond(200, ['message' => 'Permintaan pengembalian dikirim dan menunggu konfirmasi admin.']);
     }
 
     respond(400, ['error' => 'Aksi tidak dikenali.']);
